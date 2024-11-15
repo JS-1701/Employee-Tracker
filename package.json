@@ -15,5 +15,8 @@
     "inquirer": "^12.1.0",
     "pg": "^8.13.1",
     "typescript": "^5.6.3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.10"
   }
 }
