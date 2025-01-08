@@ -3,7 +3,7 @@ import {pool, connectToDb} from './connection.js'
 await connectToDb();
 
 class server {
-    async GetDepartment() {
+    async getDepartment() {
         try {
             const result = await pool.query('SELECT * FROM department');
             return result.rows;
