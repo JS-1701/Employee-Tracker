@@ -1,6 +1,6 @@
 import { pool, connectToDb } from './connection.js';
 await connectToDb();
-class server {
+class Server {
     async getDepartment() {
         try {
             const result = await pool.query('SELECT * FROM department');
@@ -37,27 +37,27 @@ class server {
             throw err;
         }
     }
-    async addRole() {
+    async addRole(roleName, salary, departmentId) {
         try {
-            const result = await pool.query('INSERT INTO role (title, salary, department_id) VALUES ($1, $2, $3)');
+            const result = await pool.query('INSERT INTO role (title, salary, department_id) VALUES ($1, $2, $3)', [roleName, salary, departmentId]);
             return result;
         }
         catch (err) {
             throw err;
         }
     }
-    async addEmployee() {
+    async addEmployee(firstName, lastName, roleId, managerId) {
         try {
-            const result = await pool.query('INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)', ['new', 'employee', 1, 1]);
+            const result = await pool.query('INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)', [firstName, lastName, roleId, managerId]);
             return result;
         }
         catch (err) {
             throw err;
         }
     }
-    async updateEmployeeRole() {
+    async updateEmployeeRole(employeeId, roleId) {
         try {
-            const result = await pool.query('UPDATE employee SET role_id = $1 WHERE id = $2', [2, 1]);
+            const result = await pool.query('UPDATE employee SET role_id = $1 WHERE id = $2', [roleId, employeeId]);
             return result;
         }
         catch (err) {
@@ -65,4 +65,4 @@ class server {
         }
     }
 }
-export default server;
+export default Server;

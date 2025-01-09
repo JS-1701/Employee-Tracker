@@ -6,17 +6,9 @@
 // add an employee
 // update an emplyee role
 import inquirer from "inquirer"
-import Server from './Server';
-import { Pool } from 'pg';
-
-const pool = new Pool({
-    user: 'yourUser',
-    host: 'localhost',
-    database: 'yourDatabase',
-    password: 'yourPassword',
-    port: 5432,
-});
+import Server from "./Server";
 const tools = new Server();
+import { pool } from './connection';
 
 
 async function init() {
@@ -116,49 +108,69 @@ const addDepartment = async () => {
         await pool.query('INSERT INTO department (name) VALUES ($1)', [departmentCreate.name]);
         console.log('Department added successfully');
     } catch (error) {
-        init();
-    } finally {
-        startInquirer();
+        console.error('Error adding department', error);
     }
 };
 
 
 
-const addRole = async() => {
+async function addRole() {
     try {
-        const departments = await tools.getDepartment();
-        const departmentChoices = departments.map((department: { id: number, name: string }) => ({
+        let departments = await tools.getDepartment();
+        let departmentChoices = departments.map((department: { id: number, name: string }) => ({
             name: department.name,
             value: department.id,
-        }
-    ));
 
-    const response = await inquirer.prompt([
-        {
-            type: 'input',
-            name: 'roleName',
-            message: 'Enter the title of the role:',
-        },
-        {
-            type: 'input',
-            name: 'salary',
-            message: 'Enter the salary for the role:',
-        },
-        {
-            type: 'list',
-            name: 'departmentId',
-            message: 'Select the department for the role:',
-            choices: departmentChoices,
-        }
-    ]);
-    await tools.addRole(response.roleName, response.salary, response.departmentId);
-    console.log(`Role "${response.roleName}" added successfully!`);
-    init();
-} catch (err) {
-    console.error('Error adding role:', err);
-    
-}
+        }));
+
+          await inquirer.prompt([
+            {
+                type: 'input',
+                name: 'roleName',
+                message: 'Enter the title of the role:',
+            },
+            {
+                type: 'input',
+                name: 'salary',
+                message: 'Enter the salary for the role:',
+            },
+            {
+                type: 'list',
+                name: 'departmentId',
+                message: 'Select the department for the role:',
+                choices: departmentChoices,
+            }
+        ]);
+
+        // Ensure salary is a number
+        const response = await inquirer.prompt([
+            {
+                type: 'input',
+                name: 'roleName',
+                message: 'Enter the title of the role:',
+            },
+            {
+                type: 'input',
+                name: 'salary',
+                message: 'Enter the salary for the role:',
+            },
+            {
+                type: 'list',
+                name: 'departmentId',
+                message: 'Select the department for the role:',
+                choices: departmentChoices,
+            }
+        ]);
+
+        const salary = Number(response.salary);
+        await tools.addRole(response.roleName, salary, response.departmentId);
+        console.log(`Role "${response.roleName}" added successfully!`);
+        init();
+    } catch (err) {
+        console.error('Error adding role:', err);
+    }
 };
+
 
 const addEmployee = async () => {
     try {
@@ -200,7 +212,7 @@ const addEmployee = async () => {
     }
 };
 
-const updateEmployeeRole = async () => {
+async function updateEmployeeRole() {
     try {
         const employees = await tools.getEmployees();
         const employeeChoices = employees.map((employee: { id: number, first_name: string, last_name: string }) => ({
@@ -228,12 +240,12 @@ const updateEmployeeRole = async () => {
                 choices: roleChoices,
             }
         ]);
+
         await tools.updateEmployeeRole(response.employeeId, response.roleId);
         console.log('Employee role updated successfully!');
         init();
     } catch (err) {
         console.error('Error updating employee role:', err);
-        
     }
 };
 
