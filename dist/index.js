@@ -8,6 +8,8 @@
 import inquirer from "inquirer";
 import Server from './Server';
 const tools = new Server();
+import { pool } from './connection';
+
 async function init() {
     try {
         const response = await inquirer.prompt([
@@ -90,28 +92,46 @@ const viewEmployees = async () => {
 };
 const addDepartment = async () => {
     try {
-        const response = await inquirer.prompt([
+        const departmentCreate = await inquirer.prompt([
             {
                 type: 'input',
-                name: 'departmentName',
-                message: 'Enter the name of the department:',
+                name: 'name',
+                message: 'Enter the name of the department'
             }
         ]);
-        await tools.addDepartment(response.departmentName);
-        console.log(`Department "${response.departmentName}" added successfully!`);
-        init();
+        await pool.query('INSERT INTO department (name) VALUES ($1)', [departmentCreate.name]);
+        console.log('Department added successfully');
     }
-    catch (err) {
-        console.error('Error adding department:', err);
+    catch (error) {
+        console.error('Error adding department', error);
     }
 };
-const addRole = async () => {
+async function addRole() {
     try {
-        const departments = await tools.getDepartment();
-        const departmentChoices = departments.map((department) => ({
+        let departments = await tools.getDepartment();
+        let departmentChoices = departments.map((department) => ({
             name: department.name,
             value: department.id,
         }));
+        await inquirer.prompt([
+            {
+                type: 'input',
+                name: 'roleName',
+                message: 'Enter the title of the role:',
+            },
+            {
+                type: 'input',
+                name: 'salary',
+                message: 'Enter the salary for the role:',
+            },
+            {
+                type: 'list',
+                name: 'departmentId',
+                message: 'Select the department for the role:',
+                choices: departmentChoices,
+            }
+        ]);
+        // Ensure salary is a number
         const response = await inquirer.prompt([
             {
                 type: 'input',
@@ -130,14 +150,16 @@ const addRole = async () => {
                 choices: departmentChoices,
             }
         ]);
-        await tools.addRole(response.roleName, response.salary, response.departmentId);
+        const salary = Number(response.salary);
+        await tools.addRole(response.roleName, salary, response.departmentId);
         console.log(`Role "${response.roleName}" added successfully!`);
         init();
     }
     catch (err) {
         console.error('Error adding role:', err);
     }
-};
+}
+;
 const addEmployee = async () => {
     try {
         const roles = await tools.getRoles();
@@ -176,7 +198,7 @@ const addEmployee = async () => {
         console.error('Error adding employee:', err);
     }
 };
-const updateEmployeeRole = async () => {
+async function updateEmployeeRole() {
     try {
         const employees = await tools.getEmployees();
         const employeeChoices = employees.map((employee) => ({
@@ -209,5 +231,6 @@ const updateEmployeeRole = async () => {
     catch (err) {
         console.error('Error updating employee role:', err);
     }
-};
+}
+;
 init();
