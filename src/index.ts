@@ -6,9 +6,9 @@
 // add an employee
 // update an emplyee role
 import inquirer from "inquirer"
-import Server from "./Server";
+import Server from "./Server.js";
 const tools = new Server();
-import { pool } from './connection';
+import { pool } from './connection.js';
 
 
 async function init() {
