@@ -6,9 +6,9 @@
 // add an employee
 // update an emplyee role
 import inquirer from "inquirer"
-import Server from "./Server";
+import Server from "./Server.js";
 const tools = new Server();
-import { pool } from './connection';
+import { pool } from './connection.js';
 
 
 async function init() {
@@ -26,6 +26,7 @@ async function init() {
                     'add a role',
                     'add an employee',
                     'update an employee role',
+                    'remove a role',
                     'exit'
                 ],
             }
@@ -52,6 +53,9 @@ async function init() {
                 break;
             case 'update an employee role':
                 await updateEmployeeRole();
+                break;
+            case 'remove a role':
+                await removeRole();
                 break;
             default:
                 console.log('Exiting...');
@@ -102,47 +106,29 @@ const addDepartment = async () => {
             {
                 type: 'input',
                 name: 'name',
-                message: 'Enter the name of the department'
-            }
+                message: 'Enter the name of the department',
+            },
         ]);
         await pool.query('INSERT INTO department (name) VALUES ($1)', [departmentCreate.name]);
         console.log('Department added successfully');
+        init(); // Call `init()` to go back to the main menu
     } catch (error) {
-        console.error('Error adding department', error);
+        console.error('Error adding department:', error);
     }
 };
 
 
 
-async function addRole() {
+const addRole = async () => {
     try {
+        // Get departments to create a list of choices for the user
         let departments = await tools.getDepartment();
-        let departmentChoices = departments.map((department: { id: number, name: string }) => ({
+        let departmentChoices = departments.map((department) => ({
             name: department.name,
             value: department.id,
-
         }));
 
-          await inquirer.prompt([
-            {
-                type: 'input',
-                name: 'roleName',
-                message: 'Enter the title of the role:',
-            },
-            {
-                type: 'input',
-                name: 'salary',
-                message: 'Enter the salary for the role:',
-            },
-            {
-                type: 'list',
-                name: 'departmentId',
-                message: 'Select the department for the role:',
-                choices: departmentChoices,
-            }
-        ]);
-
-        // Ensure salary is a number
+        // Ask all the questions in a single prompt
         const response = await inquirer.prompt([
             {
                 type: 'input',
@@ -153,19 +139,26 @@ async function addRole() {
                 type: 'input',
                 name: 'salary',
                 message: 'Enter the salary for the role:',
+                validate: (input) => {
+                    return !isNaN(Number(input)) || 'Please enter a valid number';
+                },
             },
             {
                 type: 'list',
                 name: 'departmentId',
                 message: 'Select the department for the role:',
                 choices: departmentChoices,
-            }
+            },
         ]);
 
+        // Convert salary to a number before inserting it into the database
         const salary = Number(response.salary);
+
+        // Call the addRole method from tools with the user's input
         await tools.addRole(response.roleName, salary, response.departmentId);
+
         console.log(`Role "${response.roleName}" added successfully!`);
-        init();
+        init(); // Go back to the main menu
     } catch (err) {
         console.error('Error adding role:', err);
     }
@@ -246,6 +239,36 @@ async function updateEmployeeRole() {
         init();
     } catch (err) {
         console.error('Error updating employee role:', err);
+    }
+};
+
+const removeRole = async () => {
+    try {
+        // Fetch all roles
+        const roles = await tools.getRoles(); // Assuming this fetches roles as an array
+        const roleChoices = roles.map((role) => ({
+            name: role.title, // Display the role title to the user
+            value: role.id,   // Use the role ID to identify it
+        }));
+
+        // Prompt the user to select a role to delete
+        const { roleId } = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'roleId',
+                message: 'Select the role you want to remove:',
+                choices: roleChoices,
+            },
+        ]);
+
+        // Delete the selected role from the database
+        await pool.query('DELETE FROM role WHERE id = $1', [roleId]);
+        console.log('Role deleted successfully!');
+
+        // Return to the main menu
+        await init();
+    } catch (error) {
+        console.error('Error removing role:', error);
     }
 };
 
